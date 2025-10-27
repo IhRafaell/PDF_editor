@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador e Manipulador de PDF</title>
+    <style>
+        /* ... (Mantenha o CSS anterior) ... */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinha no topo */
+            min-height: 100vh;
+        }
+        .main-content {
+            display: flex;
+            gap: 20px;
+            width: 90%;
+            max-width: 1200px;
+        }
+        .sidebar {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 40%;
+            min-width: 300px;
+        }
+        .pdf-viewer {
+            flex-grow: 1;
+            background-color: #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            min-height: 500px; /* Altura mínima para o visualizador */
+            position: relative;
+        }
+        #pdfIframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+        }
+        #status {
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2em;
+            color: #007bff;
+            display: none; /* Inicia escondido */
+        }
+        /* Estilos para o restante da página (mantidos/adaptados) */
+        h1 { color: #007bff; text-align: center; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; }
+        input[type="file"] { display: block; width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .options { display: flex; justify-content: space-around; margin: 20px 0; }
+        .options label { background-color: #e9ecef; padding: 10px 15px; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        .options input[type="radio"]:checked + label { background-color: #007bff; color: white; }
+        input[type="radio"] { display: none; }
+        button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.3s; }
+        button:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        
+        <div class="sidebar">
+            <h1>Ferramenta de PDF</h1>
+            
+            <form id="processForm" enctype="multipart/form-data">
+                
+                <div class="form-group">
+                    <label for="arquivos">Selecione Arquivos:</label>
+                    <input type="file" id="arquivos" name="arquivos" multiple required>
+                </div>
+
+                <div class="form-group">
+                    <label>Escolha a Ação:</label>
+                    <div class="options">
+                        <div>
+                            <input type="radio" id="juntar" name="acao" value="juntar_pdfs" required>
+                            <label for="juntar">Juntar PDFs</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="converter" name="acao" value="converter_imagens" required>
+                            <label for="converter">Imagens para PDF</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitButton">Processar e Visualizar</button>
+                <div id="status"></div>
+                
+                <a id="downloadLink" href="#" style="display:none; margin-top: 15px;" download="resultado.pdf">
+                    <button type="button" style="background-color: #007bff;">Baixar PDF</button>
+                </a>
+            </form>
+        </div>
+
+        <div class="pdf-viewer">
+            <div id="loading">Processando...</div>
+            <iframe id="pdfIframe" src="" title="Visualizador de PDF"></iframe>
+        </div>
+
+    </div>
+
+    <script>
+        document.getElementById('processForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Impede o envio tradicional do formulário
+
+            const form = event.target;
+            const statusDiv = document.getElementById('status');
+            const loadingDiv = document.getElementById('loading');
+            const downloadLink = document.getElementById('downloadLink');
+            const pdfIframe = document.getElementById('pdfIframe');
+
+            statusDiv.textContent = '';
+            downloadLink.style.display = 'none';
+            loadingDiv.style.display = 'block'; // Mostra o loading
+
+            // Cria um objeto FormData para empacotar os arquivos e a ação
+            const formData = new FormData(form);
+
+            try {
+                // Envia a requisição para o endpoint /processar do Flask
+                const response = await fetch('/processar', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                loadingDiv.style.display = 'none'; // Esconde o loading
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    statusDiv.textContent = `Erro: ${errorData.error || 'Falha no servidor.'}`;
+                    return;
+                }
+
+                const result = await response.json();
+                const filename = result.filename;
+                
+                // Monta a URL para o PDF gerado
+                const pdfUrl = `/pdf/${filename}`;
+
+                // 1. Atualiza o iframe para exibir o novo PDF
+                pdfIframe.src = pdfUrl;
+                
+                // 2. Atualiza o link de download
+                downloadLink.href = pdfUrl;
+                downloadLink.style.display = 'block';
+                downloadLink.setAttribute('download', 'resultado.pdf'); // Define o nome do arquivo para download
+
+                statusDiv.textContent = 'Processamento concluído. Visualize o PDF ao lado.';
+
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                statusDiv.textContent = `Erro de Conexão: ${error.message}`;
+                console.error('Erro:', error);
+            }
+        });
+    </script>
+</body>
+</html>
