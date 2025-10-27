@@ -1,45 +1,39 @@
-
 import os
 import uuid 
 from flask import Flask, render_template, request, send_file, redirect, url_for, jsonify
 from pypdf import PdfWriter
 from PIL import Image
 
-
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-
-
-def juntar_pdfs(caminhos_dos_arquivos, caminho_do_arquivo_saida):
-    """Junta múltiplos arquivos PDF."""
+def merge_pdfs(file_paths, output_file_path):
+    """Merge multiple PDF files."""
     merger = PdfWriter()
-    for caminho in caminhos_dos_arquivos:
-        merger.append(caminho)
-    merger.write(caminho_do_arquivo_saida)
+    for path in file_paths:
+        merger.append(path)
+    merger.write(output_file_path)
     merger.close()
 
-def converter_imagens_para_pdf(caminhos_das_imagens, caminho_do_arquivo_saida):
-
-    imagens_pil = []
-    for caminho in caminhos_das_imagens:
+def convert_images_to_pdf(image_paths, output_file_path):
+    """Convert images to PDF."""
+    pil_images = []
+    for path in image_paths:
         try:
-            imagens_pil.append(Image.open(caminho).convert('RGB'))
+            pil_images.append(Image.open(path).convert('RGB'))
         except Exception as e:
-            print(f"Erro ao processar imagem {caminho}: {e}")
+            print(f"Error processing image {path}: {e}")
             
-    if not imagens_pil:
-        raise ValueError("Nenhuma imagem válida encontrada para conversão.")
+    if not pil_images:
+        raise ValueError("No valid images found for conversion.")
 
-    imagens_pil[0].save(
-        caminho_do_arquivo_saida,
+    pil_images[0].save(
+        output_file_path,
         save_all=True,
-        append_images=imagens_pil[1:]
+        append_images=pil_images[1:]
     )
-
-
 
 @app.route('/')
 def index():
@@ -52,50 +46,50 @@ def serve_pdf(filename):
     if os.path.exists(filepath) and filename.endswith('.pdf'):
         return send_file(filepath, mimetype='application/pdf')
     
-    return "Arquivo não encontrado.", 404
+    return "File not found.", 404
 
-@app.route('/processar', methods=['POST'])
-def processar():
-    """Recebe os arquivos, processa e retorna o nome do PDF gerado."""
+@app.route('/process', methods=['POST'])
+def process():
+    """Receive files, process them, and return the name of the generated PDF."""
     
-    acao = request.form.get('acao')
-    arquivos_enviados = request.files.getlist('arquivos')
+    action = request.form.get('action')
+    uploaded_files = request.files.getlist('files')
     
-    if not arquivos_enviados or not acao:
-        return jsonify({'error': 'Nenhum arquivo ou ação selecionada.'}), 400
+    if not uploaded_files or not action:
+        return jsonify({'error': 'No files or action selected.'}), 400
 
-    caminhos_uploads = []
-    nome_saida_unico = f'{uuid.uuid4()}.pdf'
-    caminho_saida = os.path.join(app.config['UPLOAD_FOLDER'], nome_saida_unico)
+    upload_paths = []
+    unique_output_name = f'{uuid.uuid4()}.pdf'
+    output_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_output_name)
 
     try:
-        for f in arquivos_enviados:
+        for f in uploaded_files:
             if f and f.filename:
-                nome_upload = f"{uuid.uuid4()}_{f.filename}"
-                caminho_salvo = os.path.join(app.config['UPLOAD_FOLDER'], nome_upload)
-                f.save(caminho_salvo)
-                caminhos_uploads.append(caminho_salvo)
+                upload_name = f"{uuid.uuid4()}_{f.filename}"
+                saved_path = os.path.join(app.config['UPLOAD_FOLDER'], upload_name)
+                f.save(saved_path)
+                upload_paths.append(saved_path)
         
-        if not caminhos_uploads:
-             return jsonify({'error': 'Nenhum arquivo válido enviado.'}), 400
+        if not upload_paths:
+             return jsonify({'error': 'No valid files uploaded.'}), 400
 
-        if acao == 'juntar_pdfs':
-            juntar_pdfs(caminhos_uploads, caminho_saida)
-        elif acao == 'converter_imagens':
-            converter_imagens_para_pdf(caminhos_uploads, caminho_saida)
+        if action == 'merge_pdfs':
+            merge_pdfs(upload_paths, output_path)
+        elif action == 'convert_images':
+            convert_images_to_pdf(upload_paths, output_path)
         else:
-            return jsonify({'error': 'Ação inválida.'}), 400
+            return jsonify({'error': 'Invalid action.'}), 400
         
-        return jsonify({'filename': nome_saida_unico})
+        return jsonify({'filename': unique_output_name})
 
     except Exception as e:
-        return jsonify({'error': f'Ocorreu um erro no processamento: {str(e)}'}), 500
+        return jsonify({'error': f'An error occurred during processing: {str(e)}'}), 500
     
     finally:
-
-        for caminho in caminhos_uploads:
-            if os.path.exists(caminho):
-                os.remove(caminho)
+        # Clean up temporary files
+        for path in upload_paths:
+            if os.path.exists(path):
+                os.remove(path)
 
 if __name__ == '__main__':
     app.run(debug=True)
