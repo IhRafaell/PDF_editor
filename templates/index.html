@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualizador e Manipulador de PDF</title>
     <style>
-        /* ... (Mantenha o CSS anterior) ... */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -13,7 +12,7 @@
             background-color: #f4f4f4;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Alinha no topo */
+            align-items: flex-start; 
             min-height: 100vh;
         }
         .main-content {
@@ -35,7 +34,7 @@
             background-color: #ccc;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            min-height: 500px; /* Altura mínima para o visualizador */
+            min-height: 500px; 
             position: relative;
         }
         #pdfIframe {
@@ -56,9 +55,8 @@
             transform: translate(-50%, -50%);
             font-size: 1.2em;
             color: #007bff;
-            display: none; /* Inicia escondido */
+            display: none; 
         }
-        /* Estilos para o restante da página (mantidos/adaptados) */
         h1 { color: #007bff; text-align: center; margin-bottom: 30px; }
         .form-group { margin-bottom: 20px; }
         label { display: block; font-weight: bold; margin-bottom: 8px; }
@@ -116,7 +114,7 @@
 
     <script>
         document.getElementById('processForm').addEventListener('submit', async function(event) {
-            event.preventDefault(); // Impede o envio tradicional do formulário
+            event.preventDefault(); 
 
             const form = event.target;
             const statusDiv = document.getElementById('status');
@@ -126,19 +124,17 @@
 
             statusDiv.textContent = '';
             downloadLink.style.display = 'none';
-            loadingDiv.style.display = 'block'; // Mostra o loading
+            loadingDiv.style.display = 'block'; 
 
-            // Cria um objeto FormData para empacotar os arquivos e a ação
             const formData = new FormData(form);
 
             try {
-                // Envia a requisição para o endpoint /processar do Flask
                 const response = await fetch('/processar', {
                     method: 'POST',
                     body: formData,
                 });
 
-                loadingDiv.style.display = 'none'; // Esconde o loading
+                loadingDiv.style.display = 'none';
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -149,16 +145,13 @@
                 const result = await response.json();
                 const filename = result.filename;
                 
-                // Monta a URL para o PDF gerado
                 const pdfUrl = `/pdf/${filename}`;
 
-                // 1. Atualiza o iframe para exibir o novo PDF
                 pdfIframe.src = pdfUrl;
                 
-                // 2. Atualiza o link de download
                 downloadLink.href = pdfUrl;
                 downloadLink.style.display = 'block';
-                downloadLink.setAttribute('download', 'resultado.pdf'); // Define o nome do arquivo para download
+                downloadLink.setAttribute('download', 'resultado.pdf');
 
                 statusDiv.textContent = 'Processamento concluído. Visualize o PDF ao lado.';
 
