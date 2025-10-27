@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador e Manipulador de PDF</title>
+    <title>PDF Viewer and Manipulator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -73,41 +73,41 @@
     <div class="main-content">
         
         <div class="sidebar">
-            <h1>Ferramenta de PDF</h1>
+            <h1>PDF Tool</h1>
             
             <form id="processForm" enctype="multipart/form-data">
                 
                 <div class="form-group">
-                    <label for="arquivos">Selecione Arquivos:</label>
-                    <input type="file" id="arquivos" name="arquivos" multiple required>
+                    <label for="files">Select Files:</label>
+                    <input type="file" id="files" name="files" multiple required>
                 </div>
 
                 <div class="form-group">
-                    <label>Escolha a Ação:</label>
+                    <label>Choose Action:</label>
                     <div class="options">
                         <div>
-                            <input type="radio" id="juntar" name="acao" value="juntar_pdfs" required>
-                            <label for="juntar">Juntar PDFs</label>
+                            <input type="radio" id="merge" name="action" value="merge_pdfs" required>
+                            <label for="merge">Merge PDFs</label>
                         </div>
                         <div>
-                            <input type="radio" id="converter" name="acao" value="converter_imagens" required>
-                            <label for="converter">Imagens para PDF</label>
+                            <input type="radio" id="convert" name="action" value="convert_images" required>
+                            <label for="convert">Images to PDF</label>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" id="submitButton">Processar e Visualizar</button>
+                <button type="submit" id="submitButton">Process and View</button>
                 <div id="status"></div>
                 
-                <a id="downloadLink" href="#" style="display:none; margin-top: 15px;" download="resultado.pdf">
-                    <button type="button" style="background-color: #007bff;">Baixar PDF</button>
+                <a id="downloadLink" href="#" style="display:none; margin-top: 15px;" download="result.pdf">
+                    <button type="button" style="background-color: #007bff;">Download PDF</button>
                 </a>
             </form>
         </div>
 
         <div class="pdf-viewer">
-            <div id="loading">Processando...</div>
-            <iframe id="pdfIframe" src="" title="Visualizador de PDF"></iframe>
+            <div id="loading">Processing...</div>
+            <iframe id="pdfIframe" src="" title="PDF Viewer"></iframe>
         </div>
 
     </div>
@@ -129,7 +129,7 @@
             const formData = new FormData(form);
 
             try {
-                const response = await fetch('/processar', {
+                const response = await fetch('/process', {
                     method: 'POST',
                     body: formData,
                 });
@@ -138,7 +138,7 @@
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    statusDiv.textContent = `Erro: ${errorData.error || 'Falha no servidor.'}`;
+                    statusDiv.textContent = `Error: ${errorData.error || 'Server failure.'}`;
                     return;
                 }
 
@@ -151,14 +151,14 @@
                 
                 downloadLink.href = pdfUrl;
                 downloadLink.style.display = 'block';
-                downloadLink.setAttribute('download', 'resultado.pdf');
+                downloadLink.setAttribute('download', 'result.pdf');
 
-                statusDiv.textContent = 'Processamento concluído. Visualize o PDF ao lado.';
+                statusDiv.textContent = 'Processing completed. View the PDF on the side.';
 
             } catch (error) {
                 loadingDiv.style.display = 'none';
-                statusDiv.textContent = `Erro de Conexão: ${error.message}`;
-                console.error('Erro:', error);
+                statusDiv.textContent = `Connection Error: ${error.message}`;
+                console.error('Error:', error);
             }
         });
     </script>
